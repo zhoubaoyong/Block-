@@ -18,10 +18,10 @@ int main(int argc, const char * argv[]) {
     return 0;
 }
 ```
-上面的函数指针可以直接通过(*pSum)(3, 4)的方式调用sum(int a, int b)这个函数，这样对比block跟似乎C语言的函数指针是一样的，但是两者仍然存在以下区别：
- 1.block的代码是内联的，效率高于函数调用
- 2.block对于外部变量默认是只读属性
- 3.block被Objective-C看成是对象处理
+上面的函数指针可以直接通过(*pSum)(3, 4)的方式调用sum(int a, int b)这个函数，这样对比block跟似乎C语言的函数指针是一样的，但是两者仍然存在以下区别：<br>
+ 1.block的代码是内联的，效率高于函数调用<br>
+ 2.block对于外部变量默认是只读属性<br>
+ 3.block被Objective-C看成是对象处理<br>
 ## Block-声明和实现及要注意的问题
 ```objc
 int a = 3;
@@ -89,3 +89,26 @@ typedef void (^sendValuBlock)(NSString * myStr);
     [self presentViewController:blockView animated:YES completion:nil];
 }
 ```
+# Block-底层实现
+<p>block的底层实现：唐巧的博客http://blog.devtang.com/2013/07/28/a-look-inside-blocks/
+</p>
+# Block-不能避开循环引用
+block在iOS开发中被视作是对象，因此其生命周期会一直等到持有者的生命周期结束了才会结束。另一方面，由于block捕获变量的机制，使得持有block的对象也可能被block持有，从而形成循环引用，导致两者都不能被释放
+```objc
+-(void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
+{
+    ViewBlockControllerViewController * blockView = [ViewBlockControllerViewController new];
+    blockView.view.backgroundColor = [UIColor greenColor];
+    blockView.sendBlock = ^(NSString * str){
+        NSLog(@"%@，%@", str, self.myStr);   // 容易造成循环引用
+    };
+    __weak typeof(self) weakself = self;
+    blockView.sendValueBlock = ^(NSString * str){
+        NSLog(@"%@，%@", str, weakself.myStr);   // 使用__weak避免循环引用
+    };
+    [self presentViewController:blockView animated:YES completion:nil];
+}
+```
+# 参考资料
+http://www.cocoachina.com/ios/20160414/15921.html
+http://www.jianshu.com/p/14efa33b3562
